@@ -46,8 +46,14 @@ try
     CurrentUser CurrentUser = AuthApi.GetCurrentUser();
     WriteLine($"Logged in as {CurrentUser.DisplayName}");
 
+    WriteLine($"groupsApi == null: {groupsApi == null}");
+    WriteLine($"inputs == null: {inputs == null}");
+    WriteLine($"inputs.Group == null: {inputs.Group == null}");
+
     // Get group
     Group group = groupsApi.GetGroup(inputs.Group);
+    WriteLine($"group == null: {group == null}");
+
     int memberCount = group.MemberCount - 1;
     WriteLine($"Got Group {group.Name}, Members: {memberCount}");
 
