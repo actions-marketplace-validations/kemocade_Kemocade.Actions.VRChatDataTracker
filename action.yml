@@ -7,8 +7,8 @@ inputs:
   workspace:
     description: 'The workspace directory.'
     default: '/github/workspace'
-  directory:
-    description: 'The root directory to upload from (relative to workspace). Example, "path/to/build/artifacts".'
+  output:
+    description: 'The directory to write output inside of (relative to workspace). Example, "path/to/output".'
     required: true
   username:
     description: 'VRChat Username'
@@ -26,8 +26,8 @@ runs:
   args:
   - '-w'
   - ${{ inputs.workspace }}
-  - '-d'
-  - ${{ inputs.directory }}
+  - '-o'
+  - ${{ inputs.output }}
   - '-u'
   - ${{ inputs.username }}
   - '-p'

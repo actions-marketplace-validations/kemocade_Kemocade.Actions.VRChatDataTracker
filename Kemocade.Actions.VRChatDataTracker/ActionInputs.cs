@@ -7,8 +7,8 @@ public class ActionInputs
     [Option('w', "workspace", Required = true)]
     public string Workspace { get; set; } = null!;
 
-    [Option('d', "directory", Required = true)]
-    public string Directory { get; set; } = null!;
+    [Option('o', "output", Required = true)]
+    public string Output { get; set; } = null!;
 
     [Option('u', "username", Required = true)]
     public string Username { get; set; } = null!;

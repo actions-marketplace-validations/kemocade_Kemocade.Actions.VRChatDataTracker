@@ -1,26 +1,23 @@
 ﻿using CommandLine;
 using Kemocade.Actions.VRChatDataTracker;
 using Kemocade.Actions.VRChatDataTracker.Models;
-using Newtonsoft.Json;
 using VRChat.API.Api;
 using VRChat.API.Client;
 using VRChat.API.Model;
-
-static void Log(string message) => Console.WriteLine(message);
-
-static void LogLabel(string label, string message) =>
-    Log($"{label}: {message}");
+using static Newtonsoft.Json.JsonConvert;
+using static System.Console;
+using static System.IO.File;
 
 // Configure Cancellation
 using CancellationTokenSource tokenSource = new();
-Console.CancelKeyPress += delegate { tokenSource.Cancel(); };
+CancelKeyPress += delegate { tokenSource.Cancel(); };
 
 // Configure Inputs
 ParserResult<ActionInputs> parser = Parser.Default.ParseArguments<ActionInputs>(args);
 if (parser.Errors.ToArray() is { Length: > 0 } errors)
 {
     foreach (CommandLine.Error error in errors)
-    { LogLabel(nameof(error), error.Tag.ToString()); }
+    { WriteLine($"{nameof(error)}: {error.Tag}"); }
     Environment.Exit(2);
     return;
 }
@@ -28,7 +25,7 @@ ActionInputs inputs = parser.Value;
 
 // Find Local Files
 DirectoryInfo workspace = new(inputs.Workspace);
-DirectoryInfo directory = workspace.CreateSubdirectory(inputs.Directory);
+DirectoryInfo output = workspace.CreateSubdirectory(inputs.Output);
 
 // Authentication credentials
 Configuration Config = new()
@@ -41,44 +38,51 @@ Configuration Config = new()
 AuthenticationApi AuthApi = new(Config);
 GroupsApi groupsApi = new(Config);
 
+TrackedGroup trackedGroup;
+
 try
 {
-    // Calling "GetCurrentUser(Async)" logs you in if you are not already logged in.
+    // Log in
     CurrentUser CurrentUser = AuthApi.GetCurrentUser();
-    Console.WriteLine($"Logged in as {CurrentUser.DisplayName}.");
+    WriteLine($"Logged in as {CurrentUser.DisplayName}");
 
+    // Get group
     Group group = groupsApi.GetGroup(inputs.Group);
-    // TODO: Is GetGroupMembers returning 1 too few members??
     int memberCount = group.MemberCount - 1;
-    Console.WriteLine(memberCount);
+    WriteLine($"Got Group {group.Name}, Members: {memberCount}");
 
+    // Get group roles
     List<GroupRole> groupRoles = groupsApi.GetGroupRoles(inputs.Group);
 
-    Console.WriteLine("Getting members");
+    // Get group members
+    // TODO: member count off by 1
+    WriteLine("Getting members...");
     List<GroupMember> groupMembers = new();
     while (groupMembers.Count < memberCount)
     {
         groupMembers.AddRange(groupsApi.GetGroupMembers(inputs.Group, 100, groupMembers.Count));
-        Console.WriteLine(groupMembers.Count);
+        WriteLine(groupMembers.Count);
         await Task.Delay(1000);
     }
+    WriteLine($"Got members: {groupMembers.Count}");
 
-    TrackedGroup trackedGroup = new()
+    trackedGroup = new()
     { Group = group, GroupMembers = groupMembers, GroupRoles = groupRoles };
-
-    Console.WriteLine(JsonConvert.SerializeObject(trackedGroup));
-
-    Console.WriteLine("Done!");
-    Console.WriteLine(groupMembers.Count);
 }
 catch (ApiException e)
 {
-    Console.WriteLine("Exception when calling API: {0}", e.Message);
-    Console.WriteLine("Status Code: {0}", e.ErrorCode);
-    Console.WriteLine(e.ToString());
+    WriteLine("Exception when calling API: {0}", e.Message);
+    WriteLine("Status Code: {0}", e.ErrorCode);
+    WriteLine(e.ToString());
     Environment.Exit(2);
     return;
 }
 
-Log("Done!");
+string trackedGroupJson = SerializeObject(trackedGroup);
+WriteLine(trackedGroupJson);
+
+FileInfo outputJson = new(Path.Join(output.FullName, "output.json"));
+WriteAllText(outputJson.FullName, trackedGroupJson);
+
+WriteLine("Done!");
 Environment.Exit(0);
