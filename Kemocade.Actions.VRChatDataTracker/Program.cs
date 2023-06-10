@@ -1,12 +1,13 @@
 ﻿using CommandLine;
 using Kemocade.Actions.VRChatDataTracker;
 using Kemocade.Actions.VRChatDataTracker.Models;
+using System.Text.Json;
 using VRChat.API.Api;
 using VRChat.API.Client;
 using VRChat.API.Model;
-using static Newtonsoft.Json.JsonConvert;
 using static System.Console;
 using static System.IO.File;
+using static System.Text.Json.JsonSerializer;
 
 // Configure Cancellation
 using CancellationTokenSource tokenSource = new();
@@ -46,14 +47,8 @@ try
     CurrentUser CurrentUser = AuthApi.GetCurrentUser();
     WriteLine($"Logged in as {CurrentUser.DisplayName}");
 
-    WriteLine($"groupsApi == null: {groupsApi == null}");
-    WriteLine($"inputs == null: {inputs == null}");
-    WriteLine($"inputs.Group == null: {inputs.Group == null}");
-
     // Get group
     Group group = groupsApi.GetGroup(inputs.Group);
-    WriteLine($"group == null: {group == null}");
-
     int memberCount = group.MemberCount - 1;
     WriteLine($"Got Group {group.Name}, Members: {memberCount}");
 
@@ -84,7 +79,10 @@ catch (ApiException e)
     return;
 }
 
-string trackedGroupJson = SerializeObject(trackedGroup);
+JsonSerializerOptions jsonSerializerOptions = new()
+{ PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+string trackedGroupJson = Serialize(trackedGroup, jsonSerializerOptions);
 WriteLine(trackedGroupJson);
 
 FileInfo outputJson = new(Path.Join(output.FullName, "output.json"));
